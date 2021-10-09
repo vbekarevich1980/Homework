@@ -7,4 +7,4 @@ version : str
     string with the current version of rss-reader.py utility
 """
 
-version = 'Version 0.1'
+version = 'Version 0.2'

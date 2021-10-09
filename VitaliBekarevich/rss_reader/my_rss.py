@@ -56,7 +56,9 @@ class RSS:
         self.version = self.structure.attrib['version']
         self.title = self.structure[0].find('title').text
         self.items = self.__set_items()
-        self.items_limit = items_limit if items_limit else len(self.items)
+        self.items_limit = (items_limit
+                            if items_limit and items_limit < len(self.items)
+                            else len(self.items))
         self.offset = 0
 
     def __get_rss_structure(self, rss_url):
