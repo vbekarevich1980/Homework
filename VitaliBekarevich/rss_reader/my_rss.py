@@ -7,12 +7,15 @@ class RSSItem -- the class for containing the parsed structure of
 a rss channel item
 """
 
+import logging
 import requests
 import json
 import html
 import defusedxml.ElementTree as ElementTree
 from .rss_exceptions import *
 from .my_html_parser import DescriptionHTMLParser
+
+logger = logging.getLogger(__name__)
 
 
 class RSS:
