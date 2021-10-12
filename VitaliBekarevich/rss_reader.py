@@ -31,7 +31,7 @@ This file contains the following functions:
 import argparse
 import logging
 import logging.config
-from rss_reader import config, my_rss
+from rss_reader import config, rss
 
 
 def news_printer(args):
@@ -41,17 +41,17 @@ def news_printer(args):
     :param args: argparse.Namespace
     The arguments intercepted by argparse from command line
     """
-    rss = my_rss.RSS(args.source, args.limit)
+    rss_feed = rss.RSS(args.source, args.limit)
     print('-' * 50)
-    print('Feed:', rss.title)
+    print('Feed:', rss_feed.title)
     print('-' * 50)
 
     if args.json:
-        for item in rss:
+        for item in rss_feed:
             print(item.json)
             print('-' * 20)
     else:
-        for item in rss:
+        for item in rss_feed:
             if item.title is not None:
                 print('Title:',
                       item.title)  # TODO check if there are any  # items
