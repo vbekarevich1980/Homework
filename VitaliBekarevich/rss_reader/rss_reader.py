@@ -31,7 +31,7 @@ This file contains the following functions:
 import argparse
 import logging
 import logging.config
-from rss_reader import config, rss
+from rss_reader_p import config, rss
 
 
 def news_printer(args):

@@ -9,7 +9,8 @@ a rss channel item
 import unittest
 import xml
 import requests
-from ..rss_reader import rss
+from rss_reader_p import rss
+
 
 class RSSClassTestCase(unittest.TestCase):
     def setUp(self):
@@ -36,6 +37,8 @@ class RSSClassTestCase(unittest.TestCase):
             self.rss._RSS__get_rss_structure('https://news.yahoo.com/rss/'),
             xml.etree.ElementTree.Element,
             'not an ElementTree object')
+        #with self.assertRaises(xml.p.ElementTree.ParseError):
+        #    self.rss._RSS__get_rss_structure('https://news.yahoo.com')
 
     def test_class_iter(self):
         self.assertIs(self.rss.__iter__(), self.rss)
