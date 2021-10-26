@@ -11,6 +11,7 @@ import logging
 import requests
 import json
 import html
+import os.path
 import defusedxml.ElementTree as ElementTree
 import pandas as pd
 from io import StringIO
@@ -204,8 +205,6 @@ class RSS(NewsReader):
             publish_date = item.find('pubDate')
             link = item.find('link')
             description = item.find('description')
-            print(type(description))
-            print('i am here')
             rss_items.append(RSSItem(self.title, self.url, title, publish_date, link, description))
         return rss_items
 
@@ -246,7 +245,7 @@ class RSS(NewsReader):
         publish_dates = pd.to_datetime(news_dataframe['pubDate']).dt.strftime('%Y%m%d')
         news_dataframe = news_dataframe.join(publish_dates, rsuffix='_formatted')
 
-        with open('docs/requested_news_storage.csv', 'a', encoding='utf-16') as log_file:
+        with open(os.path.normpath('docs/requested_news_storage.csv'), 'a', encoding='utf-16') as log_file:
             news_dataframe.to_csv(log_file, sep=';', header=False, index=False,
                       encoding='utf-16')
 
@@ -307,7 +306,7 @@ class LocalStorage(NewsReader):
 
 
 
-        cached_news = pd.read_csv('docs/requested_news_storage.csv', sep=';',
+        cached_news = pd.read_csv(os.path.normpath('docs/requested_news_storage.csv'), sep=';',
                                   decimal=',', header=None,
                                   names=['feed', 'feed_url', 'title',
                                          'pubDate', 'link', 'description_text',
