@@ -66,6 +66,9 @@ def news_printer(args):
             print('-' * 20)
 
 
+    rss_feed.cash_news_items()
+
+
 def main():
     """
     The main function.
@@ -73,7 +76,7 @@ def main():
     """
     parser = argparse.ArgumentParser(
         description='Pure Python command-line RSS reader.')
-    parser.add_argument('source', help='RSS URL')
+    parser.add_argument('source', help='RSS URL', nargs='?', default='')  # TODO nargs='?', default=''
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + config.version,
                         help='Print version info')
@@ -83,6 +86,10 @@ def main():
                         help='Outputs verbose status messages')
     parser.add_argument('--limit', type=int,
                         help='Limit news topics if this parameter provided')
+    parser.add_argument('--date', type=str,
+                        help='Print the cached news published on the specified'
+                             ' date. The date should be provided in YYYYMMDD '
+                             'format')
 
     args = parser.parse_args()
 
@@ -92,7 +99,22 @@ def main():
     logging.config.dictConfig(config.log_config)
     #logger = logging.getLogger('rss_reader')
 
-    news_printer(args)
+    #news_printer(args)
+    if args.date:
+        rss_feed = rss.LocalStorage(args.source, args.date, args.limit)
+
+    else: # TODO отловить ошибку если нет источника и нет даты
+        rss_feed = rss.RSS(args.source, args.limit)
+        rss_feed.cash_news_items()
+    if args.json:
+        rss_feed.json_to_console_printer()
+    else:
+        rss_feed.news_to_console_printer()
+
+
+
+
+
 
 
 if __name__ == '__main__':
