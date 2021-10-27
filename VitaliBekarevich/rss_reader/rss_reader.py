@@ -111,6 +111,9 @@ def main():
     else:
         rss_feed.news_to_console_printer()
 
+    rss_feed.news_to_pdf_converter()
+
+
 
 
 

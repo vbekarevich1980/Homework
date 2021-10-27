@@ -15,8 +15,21 @@ import os.path
 import defusedxml.ElementTree as ElementTree
 import pandas as pd
 from io import StringIO
+
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen.canvas import Canvas
+from reportlab.lib.units import inch, cm
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.pdfmetrics import registerFont
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import PageBreak
+
 from .rss_exceptions import *
 from .description_html_parser import DescriptionHTMLParser
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +85,7 @@ class NewsReader:
         The arguments intercepted by argparse from command line
         """
         for item in self:
+            print('console', item)
             if item.title is not None:
                 print('Title:', item.title)  # TODO check if there are any  #
                         # items
@@ -97,6 +111,73 @@ class NewsReader:
         for item in self:
             print(item.json)
             print('-' * 20)
+
+    def news_to_pdf_converter(self):
+        """
+        Print into stdout the title of the rss feed and the news items
+        below.
+
+        :param args: argparse.Namespace
+        The arguments intercepted by argparse from command line
+        """
+        registerFont(TTFont('Times', 'Times.ttc'))
+        feed = '<para><strong><font size=15>Feed:</font></strong> <font size=15 fontName="Times">Люди Onlíner</font></para>'# + self.url
+
+        divider_style = ParagraphStyle(name='Normal', fontName='Times',
+                                       fontSize=16, spaceAfter=15)
+        doc = SimpleDocTemplate(os.path.normpath(f'docs/ya20211025_news111.pdf')
+                                , pagesize=A4) # TODO pass the path here
+        story = []
+
+        for item in self:
+            story.append(Paragraph(feed))
+            story.append(Paragraph('', divider_style))
+            if item.title is not None:
+                title = f'<para><strong>Title:</strong> ' \
+                        f'<font fontName="Times">{item.title}</font></para>'
+                story.append(Paragraph(title))
+            if item.link is not None:
+                link = f'<para><strong>Link:</strong> ' \
+                       f'<font fontName="Times"><link color="blue">' \
+                       f'{item.link}</link></font></para>'
+                story.append(Paragraph(link))
+            if item.publish_date is not None:
+                publish_date = f'<para><strong>Date:</strong> ' \
+                               f'<font fontName="Times">{item.publish_date}' \
+                               f'</font></para>'
+                story.append(Paragraph(publish_date))
+                story.append(Paragraph('', divider_style))
+
+            if item.description.description_images:
+                for image in item.description.description_images:
+                    image_pdf = f'<para autoleading="min">' \
+                                f'<img src={image} valign="top"/>' \
+                                f'<br/><br/></para>'
+                    story.append(Paragraph(image_pdf))
+
+            if item.description.description_text:
+                description_text = f'<para autoleading="min">' \
+                                   f'<font fontName="Times">' \
+                                   f'{item.description.description_text}' \
+                                   f'</font></para>'
+                story.append(Paragraph(description_text))
+
+            if item.description.description_links:
+                link_label = '<para><strong>Links:</strong></para>'
+                story.append(Paragraph('', divider_style))
+                story.append(Paragraph(link_label))
+
+                for i in range(len(item.description.description_links)):
+                    link = f'<para>[{i+1}]: <font fontName="Times">' \
+                           f'<link color="blue">' \
+                           f'{item.description.description_links[i]}' \
+                           f'</link></font></para>'
+                    story.append(Paragraph(link))
+
+            story.append(PageBreak())
+
+        doc.build(story)
+
 
 
 class RSS(NewsReader):
@@ -221,6 +302,9 @@ class RSS(NewsReader):
         print('-' * 50)
 
         NewsReader.news_to_console_printer(self)
+
+    #def news_to_pdf_converter(self):
+    #    NewsReader.news_to_pdf_converter(self)
 
     def json_to_console_printer(self):
         """
