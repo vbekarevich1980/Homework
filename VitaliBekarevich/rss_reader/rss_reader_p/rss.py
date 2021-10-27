@@ -50,7 +50,7 @@ class NewsReader:
         self.url = rss_url
         self.items = []
         self.limit = items_limit
-        self.offset = 0
+        #self.offset = 0
 
     def __iter__(self):
         """
@@ -59,22 +59,23 @@ class NewsReader:
         :return: RSS
         The the instance of RSS class as an iterator
         """
-        return self
+        #return self
+        return NewsViewer(self.items, self.items_limit)
 
-    def __next__(self):
-        """
-        Return successive items in the list of RSSItem instances.
-
-        :return: RSSItem
-        The instance of RSSItem from the list stored in the 'items'
-        attribute of a RSS instance
-        """
-        if self.offset >= self.items_limit:
-            raise StopIteration
-        else:
-            item = self.items[self.offset]
-            self.offset += 1
-            return item
+    #def __next__(self):
+    #    """
+    #    Return successive items in the list of RSSItem instances.
+#
+    #    :return: RSSItem
+    #    The instance of RSSItem from the list stored in the 'items'
+    #    attribute of a RSS instance
+    #    """
+    #    if self.offset >= self.items_limit:
+    #        raise StopIteration
+    #    else:
+    #        item = self.items[self.offset]
+    #        self.offset += 1
+    #        return item
 
     def news_to_console_printer(self):
         """
@@ -179,6 +180,26 @@ class NewsReader:
         doc.build(story)
 
 
+class NewsViewer:
+    def __init__(self, items, limit):
+        self.items = items
+        self.offset = 0
+        self.items_limit = limit
+
+    def __next__(self):
+        """
+        Return successive items in the list of RSSItem instances.
+
+        :return: RSSItem
+        The instance of RSSItem from the list stored in the 'items'
+        attribute of a RSS instance
+        """
+        if self.offset >= self.items_limit:
+            raise StopIteration
+        else:
+            item = self.items[self.offset]
+            self.offset += 1
+            return item
 
 class RSS(NewsReader):
     """
