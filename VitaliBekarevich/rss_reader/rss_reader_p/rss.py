@@ -16,13 +16,11 @@ import defusedxml.ElementTree as ElementTree
 import pandas as pd
 from io import StringIO
 
-from reportlab.lib.utils import ImageReader
-from reportlab.pdfgen.canvas import Canvas
-from reportlab.lib.units import inch, cm
+
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.pdfmetrics import registerFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import PageBreak
 
@@ -178,6 +176,41 @@ class NewsReader:
             story.append(PageBreak())
 
         doc.build(story)
+
+    def news_to_html_converter(self):
+        """
+        Print into stdout the title of the rss feed and the news items
+        below.
+
+        :param args: argparse.Namespace
+        The arguments intercepted by argparse from command line
+        """
+
+        json_list = [json.loads(item.json) for item in self]
+
+        news_dataframe = pd.read_json(StringIO(json.dumps(json_list)),
+                                      orient='records', encoding='utf-16')
+        # Add a column with the dates of news publishing in needed format
+        #publish_dates = pd.to_datetime(news_dataframe['pubDate']).dt.strftime(
+        #    '%Y%m%d')
+        #news_dataframe = news_dataframe.join(publish_dates,
+        #                                     rsuffix='_formatted')
+
+        with open(os.path.normpath('docs/news.html'), 'w',
+                  encoding='utf-16') as html_file:
+            #news_dataframe.to_csv(log_file, sep=';', header=False, index=False,
+            #                      encoding='utf-16')
+            news_dataframe.to_html(buf=html_file, columns=None, col_space=None,
+                              header=True, index=False, na_rep='NaN',
+                              formatters=None, float_format=None,
+                              sparsify=None, index_names=True, justify=None,
+                              max_rows=None, max_cols=None,
+                              show_dimensions=False, decimal='.',
+                              bold_rows=True, classes=None, escape=True,
+                              notebook=False, border=None, table_id=None,
+                              render_links=True, encoding=None)
+
+
 
 
 class NewsViewer:
