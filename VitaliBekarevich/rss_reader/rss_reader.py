@@ -34,39 +34,6 @@ import logging.config
 from rss_reader_p import config, rss
 
 
-def news_printer(args):
-    """
-    Print into stdout the title of the rss feed and the news items below.
-
-    :param args: argparse.Namespace
-    The arguments intercepted by argparse from command line
-    """
-    rss_feed = rss.RSS(args.source, args.limit)
-    print('-' * 50)
-    print('Feed:', rss_feed.title)
-    print('-' * 50)
-
-    if args.json:
-        for item in rss_feed:
-            print(item.json)
-            print('-' * 20)
-    else:
-        for item in rss_feed:
-            if item.title is not None:
-                print('Title:',
-                      item.title)  # TODO check if there are any  # items
-            if item.link is not None:
-                print('Link:', item.link)
-            if item.publish_date is not None:
-                print('Date:', item.publish_date, '\n')
-            if item.description is not None:
-                print(item.description.description_text, '\n')
-            if item.description is not None:
-                print(item.description.description_extension)
-            print('-' * 20)
-
-
-    rss_feed.cash_news_items()
 
 
 def main():
@@ -86,10 +53,16 @@ def main():
                         help='Outputs verbose status messages')
     parser.add_argument('--limit', type=int,
                         help='Limit news topics if this parameter provided')
-    parser.add_argument('--date', type=str,
+    parser.add_argument('--date', metavar='YYYYMMDD', type=str,
                         help='Print the cached news published on the specified'
                              ' date. The date should be provided in YYYYMMDD '
                              'format')
+    parser.add_argument('--to-pdf', metavar='PATH', type=str,
+                        help='Convert the news into pdf format and stores the '
+                             'pdf file to the specified location')
+    parser.add_argument('--to-html', metavar='PATH', type=str,
+                        help='Convert the news into html format and stores the'
+                             ' html file to the specified location')
 
     args = parser.parse_args()
 
@@ -101,18 +74,19 @@ def main():
 
     #news_printer(args)
     if args.date:
-        rss_feed = rss.LocalStorage(args.source, args.date, args.limit)
+        reader = rss.CachedNewsReader(args.source, args.date, args.limit)
 
     else: # TODO отловить ошибку если нет источника и нет даты
-        rss_feed = rss.RSS(args.source, args.limit)
-        rss_feed.cash_news_items()
+        reader = rss.RSSNewsReader(args.source, args.limit)
+        reader.cash_news_items()
     if args.json:
-        rss_feed.json_to_console_printer()
-    else:
-        rss_feed.news_to_console_printer()
-
-    rss_feed.news_to_pdf_converter()
-    rss_feed.news_to_html_converter()
+        reader.json_to_console_printer()
+    if args.to_pdf:
+        reader.news_to_pdf_converter(args.to_pdf, args.date)
+    elif args.to_html:
+        reader.news_to_html_converter(args.to_html, args.date)
+    elif not args.json:
+        reader.news_to_console_printer()
 
 
 
