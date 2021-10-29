@@ -181,11 +181,22 @@ class NewsReader:
 
             if item.description is not None:
                 if item.description.description_images:
-                    for image in item.description.description_images:
-                        image_pdf = f'<para autoleading="min">' \
-                                    f'<img src={image} valign="top"/>' \
+                    for image in enumerate(item.description.description_images):
+                        try:
+                            image_request = requests.get(image[1])
+                        except requests.exceptions.RequestException:
+                            image_pdf = f'<para>[{image[0] + 1}]: <font ' \
+                                        f'fontName="Times"><link color="blue">{image[1]}</link> (image ' \
+                                        f'was not loaded)</font></para>'
+                        else:
+                            if image_request.status_code == 200:
+                                image_pdf = f'<para autoleading="min">' \
+                                    f'<img src={image[1]} valign="top"/>' \
                                     f'<br/><br/></para>'
+
                         story.append(Paragraph(image_pdf))
+
+                story.append(Paragraph('', divider_style))
 
                 if item.description.description_text:
                     description_text = f'<para autoleading="min">' \
