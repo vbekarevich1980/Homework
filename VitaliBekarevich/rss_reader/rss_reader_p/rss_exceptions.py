@@ -28,6 +28,8 @@ class RSSException(Exception):
         self.error_message = error_message
 
 
+
+
 class NotRSSFeedError(RSSException):
     """
     A subclass of RSSException to specify a special type of RSSException
@@ -36,3 +38,35 @@ class NotRSSFeedError(RSSException):
     """
 
     pass
+
+class DateNotValidError(RSSException):
+    """
+    A subclass of RSSException to specify a special type of RSSException
+    raised when not-rss url parsing is attempted.
+    All methods are inherited from RSSException.
+    """
+
+    def __str__(self):
+        """
+        Override __init__ of the superclass Exception to set an error message.
+
+        :param error_message: str
+        The text of the error message
+        """
+        return 'DateNotValidError: ' + self.error_message
+
+class NoCachedRSSFeedFoundError(RSSException):
+    """
+    A subclass of RSSException to specify a special type of RSSException
+    raised when not-rss url parsing is attempted.
+    All methods are inherited from RSSException.
+    """
+
+    def __str__(self):
+        """
+        Override __init__ of the superclass Exception to set an error message.
+
+        :param error_message: str
+        The text of the error message
+        """
+        return 'NoCachedRSSFeedFoundError: ' + self.error_message

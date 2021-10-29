@@ -1,6 +1,7 @@
 ###### **JSON form used in the rss_reader utility**
 
-`{
+```
+{
     "feed": "RSS feed channel title",
     "feed_url": "RSS feed URL",
     "title": "News item title",
@@ -12,7 +13,8 @@
             "links": ["News item additional URLs"],
             "images": ["News item images URLs"],
         },
-}`
+}
+```
 
 
 # News item

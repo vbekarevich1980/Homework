@@ -514,36 +514,45 @@ class CachedNewsReader(NewsReader):
 
         cached_news.drop_duplicates(inplace=True)
 
-        # Pick up the news by the date
-        selected_by_date_news = cached_news.loc[
-            cached_news['pubDate_formatted'] == self.publish_date]
+        try:
+            # Pick up the news by the date
+            selected_by_date_news = cached_news.loc[
+                cached_news['pubDate_formatted'] == self.publish_date]
 
+            if selected_by_date_news.empty:
+                raise DateNotValidError('There are no cached news published on the specified date. Please, try another date.')
 
-        # Pick up the news by the feed
-        if self.url:
-            selected_by_date_and_feed_news = selected_by_date_news.loc[
-                selected_by_date_news['feed_url'] == self.url]
+            # Pick up the news by the feed
+            if self.url:
+                selected_by_date_and_feed_news = selected_by_date_news.loc[
+                    selected_by_date_news['feed_url'] == self.url]
+                if selected_by_date_and_feed_news.empty:
+                    raise NoCachedRSSFeedFoundError(
+                        'There are no cached news from the specified feed. '
+                        'Please, try another URL.')
+                self.feed = selected_by_date_and_feed_news.iat[0, 0]
+                selected_news_json = selected_by_date_and_feed_news.to_json(orient='records', force_ascii=False)
+            else:
+                selected_news_json = selected_by_date_news.to_json(orient='records', force_ascii=False)
 
-            self.feed = selected_by_date_and_feed_news.iat[0, 0]
-            selected_news_json = selected_by_date_and_feed_news.to_json(orient='records', force_ascii=False)
-        else:
-            selected_news_json = selected_by_date_news.to_json(
-                orient='records', force_ascii=False)
-        selected_news = json.loads(selected_news_json)
+            selected_news = json.loads(selected_news_json)
 
-
-
-        for item in selected_news:
-            title = item["title"]
-            publish_date = item["pubDate"]
-            link = item["link"]
-            description_text = item["description_text"]
-            description_links = item["description_links"]
-            description_images = item["description_images"]
-            rss_items.append(
-                RSSItem(self.feed, self.url, title, publish_date, link,
-                        RSSItemDescription(text=description_text,links=description_links,images=description_images)))
-        return rss_items
+            for item in selected_news:
+                title = item["title"]
+                publish_date = item["pubDate"]
+                link = item["link"]
+                description_text = item["description_text"]
+                description_links = item["description_links"]
+                description_images = item["description_images"]
+                rss_items.append(
+                    RSSItem(self.feed, self.url, title, publish_date, link,
+                            RSSItemDescription(text=description_text,links=description_links,images=description_images)))
+        except DateNotValidError as error:
+            print(error)
+        except NoCachedRSSFeedFoundError as error:
+            print(error)
+        finally:
+            return rss_items
 
     #def news_to_console_printer(self):
     #    """
