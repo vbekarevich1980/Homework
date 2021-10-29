@@ -39,6 +39,7 @@ import argparse
 import logging
 import logging.config
 from rss_reader_p import config
+from rss_reader_p.rss_exceptions import *
 
 
 def main():
@@ -81,19 +82,26 @@ def main():
     from rss_reader_p import rss
 
     # Create the main logic of the script depending on the parsed arguments
-    if args.date:
-        reader = rss.CachedNewsReader(args.source, args.date, args.limit)
-    else:
-        reader = rss.RSSNewsReader(args.source, args.limit)
-        reader.cash_news_items()
-    if args.json:
-        reader.json_to_console_printer()
-    if args.to_pdf:
-        reader.news_to_pdf_converter(args.to_pdf, args.date)
-    elif args.to_html:
-        reader.news_to_html_converter(args.to_html, args.date)
-    elif not args.json:
-        reader.news_to_console_printer()
+    try:
+        if args.date:
+            reader = rss.CachedNewsReader(args.source, args.date, args.limit)
+        else:
+            reader = rss.RSSNewsReader(args.source, args.limit)
+            reader.cash_news_items()
+        if args.json:
+            reader.json_to_console_printer()
+        if args.to_pdf:
+            reader.news_to_pdf_converter(args.to_pdf, args.date)
+        elif args.to_html:
+            reader.news_to_html_converter(args.to_html, args.date)
+        elif not args.json:
+            reader.news_to_console_printer()
+    except ConnectionError as error:
+        print(error)
+    except ParserError as error:
+        print(error)
+    except NotRSSFeedError as error:
+        print(error)
 
 
 if __name__ == '__main__':

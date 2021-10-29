@@ -145,15 +145,15 @@ class NewsReader:
 
         # Check if the specified by the user path exists, if it is a file.
         # Create a directory if needed
-        path = os.path.normpath(path)
+        path = os.path.normcase(path)
         if os.path.exists(path):
             if os.path.isdir(path):
-                file = os.path.normpath(f'{path}/news_{self.feed}_{date}.pdf')
+                file = os.path.join(path, f'news_{self.feed}_{date}.pdf')
             elif os.path.isfile(path):
                 file = path
         else:
             os.makedirs(path)
-            file = os.path.normpath(f'{path}/news_{self.feed}_{date}.pdf')
+            file = os.path.join(path, f'news_{self.feed}_{date}.pdf')
 
         doc = SimpleDocTemplate(file, pagesize=A4)
         story = []
@@ -225,15 +225,15 @@ class NewsReader:
                                       orient='records', encoding='utf-16')
         # Check if the specified by the user path exists, if it is a file.
         # Create a directory if needed
-        path = os.path.normpath(path)
+        path = os.path.normcase(path)
         if os.path.exists(path):
             if os.path.isdir(path):
-                file = os.path.normpath(f'{path}/news_{self.feed}_{date}.html')
+                file = os.path.join(path, f'news_{self.feed}_{date}.html')
             elif os.path.isfile(path):
                 file = path
         else:
             os.makedirs(path)
-            file = os.path.normpath(f'{path}/news_{self.feed}_{date}.html')
+            file = os.path.join(path, f'news_{self.feed}_{date}.html')
 
         with open(file, 'w',
                   encoding='utf-16') as html_file:
@@ -347,24 +347,26 @@ class RSSNewsReader(NewsReader):
         try:
             rss_request = requests.get(self.url)
             rss_request.raise_for_status()
-        except requests.HTTPError:
-            print(f'Your request to {self.url} returned an unsuccessful status '
+        except requests.exceptions.HTTPError:
+            raise ConnectionError(f'Your request to {self.url} returned an unsuccessful status '
                   f'code - {rss_request.status_code}. Please, try again later '
                   f'or use other link.')
-        except ConnectionError:
-            print(f'When trying to get {self.url} some network problem '
-                  f'occurred. Please, try again later.')
-        except TimeoutError:
-            print(f'Your request to {self.url} timed out. Please, try again '
+        except requests.exceptions.ConnectionError:
+            #print(f'When trying to get {self.url} some network problem '
+            #      f'occurred. Please, try again later.')
+            raise ConnectionError(f'When trying to get {self.url} some network problem'
+                                  f'occurred. Please, try again later.')
+        except requests.exceptions.Timeout:
+            raise ConnectionError(f'Your request to {self.url} timed out. Please, try again '
                   f'later.')
-        except requests.TooManyRedirects:
-            print(f'Your request to {self.url} exceeded the number of maximum '
+        except requests.exceptions.TooManyRedirects:
+            raise ConnectionError(f'Your request to {self.url} exceeded the number of maximum '
                   f'redirections. Please, try again later.')
         else:
             try:
                 rss_structure = ElementTree.fromstring(rss_request.text)
             except ElementTree.ParseError:
-                print(f'The data structure from {self.url} failed to be '
+                raise ParserError(f'The data structure from {self.url} failed to be '
                       f'recognise. Please, use other link.')
             else:
                 if rss_structure.tag == 'rss':
@@ -439,7 +441,7 @@ class RSSNewsReader(NewsReader):
         publish_dates = pd.to_datetime(news_dataframe['pubDate']).dt.strftime('%Y%m%d')
         news_dataframe = news_dataframe.join(publish_dates, rsuffix='_formatted')
 
-        with open(os.path.normpath('docs/requested_news_storage.csv'), 'a', encoding='utf-16') as log_file:
+        with open(os.path.join('docs', 'requested_news_storage.csv'), 'a', encoding='utf-16') as log_file:
             news_dataframe.to_csv(log_file, sep=';', header=False, index=False,
                       encoding='utf-16')
 
@@ -502,7 +504,7 @@ class CachedNewsReader(NewsReader):
 
 
 
-        cached_news = pd.read_csv(os.path.normpath('docs/requested_news_storage.csv'), sep=';',
+        cached_news = pd.read_csv(os.path.join('docs', 'requested_news_storage.csv'), sep=';',
                                   decimal=',', header=None,
                                   names=['feed', 'feed_url', 'title',
                                          'pubDate', 'link', 'description_text',
@@ -538,6 +540,8 @@ class CachedNewsReader(NewsReader):
             selected_news = json.loads(selected_news_json)
 
             for item in selected_news:
+                feed = item['feed']
+                feed_url = item['feed_url']
                 title = item["title"]
                 publish_date = item["pubDate"]
                 link = item["link"]
@@ -545,7 +549,7 @@ class CachedNewsReader(NewsReader):
                 description_links = item["description_links"]
                 description_images = item["description_images"]
                 rss_items.append(
-                    RSSItem(self.feed, self.url, title, publish_date, link,
+                    RSSItem(feed, feed_url, title, publish_date, link,
                             RSSItemDescription(text=description_text,links=description_links,images=description_images)))
         except DateNotValidError as error:
             print(error)
