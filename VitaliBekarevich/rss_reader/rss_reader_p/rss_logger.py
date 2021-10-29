@@ -34,8 +34,18 @@ def rss_logger(logger):
             The callable object of the function or method
             """
             docstring = function.__doc__.split('.\n', maxsplit=1)[0].strip()
-            log = (docstring.split(maxsplit=1)[0] + 'ing '
-                   + docstring.split(maxsplit=1)[1] + '.')
+            start_word = docstring.split(maxsplit=1)[0]
+            if start_word.endswith('e'):
+                start_word = start_word[:-1] + 'ing '
+            elif start_word.endswith('ie'):
+                start_word = start_word[:-2] + 'ying '
+            elif start_word.endswith('l'):
+                start_word = start_word + 'ling '
+            elif start_word.endswith('ic'):
+                start_word = start_word + 'king '
+            else:
+                start_word = start_word + 'ing '
+            log = start_word + docstring.split(maxsplit=1)[1] + '.'
             logger.debug(log)
             return function(*args, **kwargs)
         return wrapped
