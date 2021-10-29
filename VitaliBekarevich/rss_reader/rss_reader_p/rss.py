@@ -1,10 +1,20 @@
 """
-This module exports RSS and RSSItem classes presenting containers for
-a rss document.
+This module exports NewsReader, NewsViewer, RSSNewsReader,
+CachedNewsReader, RSSItem and RSSItemDescription classes presenting
+containers for the news retrieved from a rss feed.
 
-class RSS -- the class for containing the parsed structure of a rss document
+class NewsReader -- the class for containing the parsed news items from
+                    a rss feed
+class NewsViewer -- the class for creating an iterator for multiple
+                    iteration through a NewsReader instance
+class RSSNewsReader -- the subclass of NewsReader for containing the news
+                    items parsed from a rss feed
+class CachedNewsReader -- the subclass of NewsReader for containing the
+                    news items retrieved from the local storage
 class RSSItem -- the class for containing the parsed structure of
-a rss channel item
+                    a single rss feed news item
+class RSSItemDescription -- the class for containing the parsed
+                    structure of a description of a news item
 """
 
 import logging
@@ -16,7 +26,6 @@ import defusedxml.ElementTree as ElementTree
 import pandas as pd
 from io import StringIO
 
-
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.pdfmetrics import registerFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph
@@ -26,16 +35,32 @@ from reportlab.platypus import PageBreak
 
 from .rss_exceptions import *
 from .description_html_parser import DescriptionHTMLParser
+from .rss_logger import rss_logger
 
-
-
+# Set the logger
 logger = logging.getLogger(__name__)
 
 
 class NewsReader:
+    """
+    A container class used to accumulate the currently parsed news items
+    and output them in the way requested by the user with the options
+    of the rss_reader.py utility.
+
+    Attributes
+    ----------
+    url : str
+        the URL of the parsed RSS feed
+    feed : str
+        the title of the parsed RSS feed
+    parsed_text_data : str
+        the text data parsed from HTML text of the rss channel item
+        description
+    """
+    @rss_logger(logger)
     def __init__(self, rss_url=None, items_limit=None):
         """
-        Construct an instance of RSS class and set values for structure,
+        Construct an instance of NewsReader class and set values for structure,
         version, title, url, items, items_limit, offset
         attributes.
 
@@ -46,10 +71,12 @@ class NewsReader:
         by __next__ method (default is None)
         """
         self.url = rss_url
+        self.feed = ''
         self.items = []
         self.limit = items_limit
-        self.feed = ''
 
+
+    @rss_logger(logger)
     def __iter__(self):
         """
         Return the instance of RSS class as an iterator.
@@ -59,6 +86,7 @@ class NewsReader:
         """
         return NewsViewer(self.items, self.items_limit)
 
+    @rss_logger(logger)
     def news_to_console_printer(self):
         """
         Print into stdout the title of the rss feed and the news items
@@ -85,6 +113,7 @@ class NewsReader:
                 print(item.description.description_extension)
             print('-' * 100)
 
+    @rss_logger(logger)
     def json_to_console_printer(self):
         """
         Print into stdout the title of the rss feed and the news items
@@ -98,6 +127,7 @@ class NewsReader:
             print(item.json)
             print('-' * 100)
 
+    @rss_logger(logger)
     def news_to_pdf_converter(self, path, date=''):
         """
         Print into stdout the title of the rss feed and the news items
@@ -178,6 +208,7 @@ class NewsReader:
 
         doc.build(story)
 
+    @rss_logger(logger)
     def news_to_html_converter(self, path, date=''):
         """
         Print into stdout the title of the rss feed and the news items
@@ -221,11 +252,20 @@ class NewsReader:
 
 
 class NewsViewer:
+    @rss_logger(logger)
     def __init__(self, items, limit):
+        """
+
+        :param items:
+        :type items:
+        :param limit:
+        :type limit:
+        """
         self.items = items
         self.offset = 0
         self.items_limit = limit
 
+    @rss_logger(logger)
     def __next__(self):
         """
         Return successive items in the list of RSSItem instances.
@@ -268,6 +308,7 @@ class RSSNewsReader(NewsReader):
         method in the iterator
     """
 
+    @rss_logger(logger)
     def __init__(self, rss_url, items_limit=None):
         """
         Construct an instance of RSS class and set values for structure,
@@ -288,7 +329,7 @@ class RSSNewsReader(NewsReader):
         self.items_limit = (items_limit if items_limit and items_limit < len(
             self.items) else len(self.items))
 
-
+    @rss_logger(logger)
     def __get_rss_structure(self):
         """
         Get the instance of Element class from defusedxml.ElementTree
@@ -332,6 +373,7 @@ class RSSNewsReader(NewsReader):
                                           f'returned not a RSS feed. '
                                           f'Please, try other link.')
 
+    @rss_logger(logger)
     def __set_items(self):  # TODO Add flags from parameters - a JSON should
         # be created only if the lag is on
         """
@@ -381,7 +423,13 @@ class RSSNewsReader(NewsReader):
 #
     #    NewsReader.json_to_console_printer(self)
 #
+    @rss_logger(logger)
     def cash_news_items(self):
+        """
+
+        :return:
+        :rtype:
+        """
 
         json_list = [json.loads(item.json) for item in self.items]
 
@@ -421,6 +469,7 @@ class CachedNewsReader(NewsReader):
         method in the iterator
     """
 
+    @rss_logger(logger)
     def __init__(self, rss_url, publish_date, items_limit=None):
         """
         Construct an instance of RSS class and set values for structure,
@@ -440,6 +489,7 @@ class CachedNewsReader(NewsReader):
             items_limit if items_limit and items_limit < len(
                 self.items) else len(self.items))
 
+    @rss_logger(logger)
     def __set_items(self):  # TODO Add flags from parameters - a JSON should
         # be created only if the lag is on
         """
@@ -542,6 +592,7 @@ class RSSItem:
         the item presented by a JSON formatted str
     """
 
+    @rss_logger(logger)
     def __init__(self, feed, feed_url, title=None, publish_date=None, link=None,
                  description=None):
         """
@@ -569,8 +620,15 @@ class RSSItem:
         #                    else RSSItemDescription(description=description))
         self.json = self.__generate_json()
 
-
+    @rss_logger(logger)
     def __set_title(self, title):
+        """
+
+        :param title:
+        :type title:
+        :return:
+        :rtype:
+        """
         if title is None:
             self.title = None
         elif isinstance(title, str):
@@ -578,7 +636,15 @@ class RSSItem:
         else:
             self.title = html.unescape(title.text)
 
+    @rss_logger(logger)
     def __set_publish_date(self, publish_date):
+        """
+
+        :param publish_date:
+        :type publish_date:
+        :return:
+        :rtype:
+        """
         if publish_date is None:
             self.publish_date = None
         elif isinstance(publish_date, str):
@@ -586,7 +652,15 @@ class RSSItem:
         else:
             self.publish_date = publish_date.text
 
+    @rss_logger(logger)
     def __set_link(self, link):
+        """
+
+        :param link:
+        :type link:
+        :return:
+        :rtype:
+        """
         if link is None:
             self.link = None
         elif isinstance(link, str):
@@ -594,8 +668,15 @@ class RSSItem:
         else:
             self.link = link.text
 
-
+    @rss_logger(logger)
     def __set_description(self, description):
+        """
+
+        :param description:
+        :type description:
+        :return:
+        :rtype:
+        """
         if description is None:
             self.description = None
         elif isinstance(description, RSSItemDescription):
@@ -603,7 +684,7 @@ class RSSItem:
         else:
             self.description = RSSItemDescription(description=description)
 
-
+    @rss_logger(logger)
     def __generate_json(self):
         """
         Serialize a RSSItem object to a JSON formatted str.
@@ -652,6 +733,7 @@ class RSSItemDescription:
         for printing out in stdout
     """
 
+    @rss_logger(logger)
     def __init__(self, *, description=None, text=None, links=None, images=None):
         """
         Construct an instance of RSSItemDescription class and set values
@@ -664,6 +746,7 @@ class RSSItemDescription:
         self.__set_description(description=description, text=text, links=links, images=images)
         self.__set_extension()
 
+    @rss_logger(logger)
     def __set_description(self, **kwargs):
         """
         Parse the text data and URLs from the HTML text of the description
@@ -705,6 +788,7 @@ class RSSItemDescription:
                 #self.description_images = kwargs['images'].strip('[]').split(', ')\
                 #if kwargs['images'] else []
 
+    @rss_logger(logger)
     def __set_extension(self):
         """
         Compiled the string with the text for printing out in stdout

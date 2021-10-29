@@ -10,7 +10,7 @@ log_config : dict
     dictionary with the configuration of the logging when running the utility
 """
 
-version = 'Version 2.0.5'
+version = 'Version 2.0.6'
 
 log_config = {
     'version': 1,
@@ -22,7 +22,7 @@ log_config = {
         },
     },
     'loggers': {
-        'rss_reader': {
+        'rss_reader_p': {
             'handlers': ['stream_handler'],
             'level': 'WARNING',
         },

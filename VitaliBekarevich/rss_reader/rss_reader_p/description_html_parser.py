@@ -8,7 +8,9 @@ the rss channel item description
 
 import logging
 from html.parser import HTMLParser
+from .rss_logger import rss_logger
 
+# Set the logger
 logger = logging.getLogger(__name__)
 
 
@@ -28,6 +30,7 @@ class DescriptionHTMLParser(HTMLParser):
         description
     """
 
+    @rss_logger(logger)
     def error(self, message):
         """
         Intercept the unexpected error and print the error message to stdout.
@@ -37,6 +40,7 @@ class DescriptionHTMLParser(HTMLParser):
         """
         print('Unexpected error has occurred:', message)
 
+    @rss_logger(logger)
     def __init__(self):
         """
         Override __init__ of the superclass HTMLParser to construct an
@@ -44,16 +48,12 @@ class DescriptionHTMLParser(HTMLParser):
         parsed_links, parsed_images, parsed_text_data attributes.
 
         """
-        logger.debug('Constructing an instance of DescriptionHTMLParser '
-                     'class.')
         super().__init__()
-        logger.debug('Initialising the attribute "parsed_links".')
         self.parsed_links = set()
-        logger.debug('Initialising the attribute "parsed_images".')
         self.parsed_images = set()
-        logger.debug('Initialising the attribute "parsed_text_data".')
         self.parsed_text_data = ''
 
+    @rss_logger(logger)
     def handle_starttag(self, tag, attrs):
         """
         Handle the start of a tag (e.g. <a href="https://...">) to
@@ -65,23 +65,18 @@ class DescriptionHTMLParser(HTMLParser):
         The list of (name, value) pairs containing the attributes found
         inside the tag’s <> brackets
         """
-        logger.debug('Handling the start of a tag to retrieve URLs from the '
-                     'tag attributes.')
         if tag == 'a':
             for attr in attrs:
+                # Add found link to the list in the "parsed_links" attribute
                 if attr[0] == 'href':
-                    logger.debug(
-                        'Adding found link to the list in the "parsed_links" '
-                        'attribute.')
                     self.parsed_links.add(attr[1])
         elif tag == 'img':
             for attr in attrs:
+                # Add found image to the list in the "parsed_images" attribute
                 if attr[0] == 'src':
-                    logger.debug(
-                        'Adding found image to the list in the "parsed_images"'
-                        ' attribute.')
                     self.parsed_images.add(attr[1])
 
+    @rss_logger(logger)
     def handle_data(self, data):
         """
         Process arbitrary data of the HTML text to retrieve the text
@@ -90,7 +85,5 @@ class DescriptionHTMLParser(HTMLParser):
         :param data: str
         The text data inside HTML string
         """
-        logger.debug('Processing arbitrary data of the HTML text to retrieve'
-                     ' the text of the description.')
+        # Add found text to the "parsed_text_data" attribute
         self.parsed_text_data += data
-        logger.debug('Adding found text to the "parsed_text_data" attribute.')
