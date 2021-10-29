@@ -107,10 +107,11 @@ class NewsReader:
                 print('Link:', item.link)
             if item.publish_date is not None:
                 print('Date:', item.publish_date, '\n')
-            if item.description.description_text:
-                print(item.description.description_text, '\n')
-            if item.description.description_extension:
-                print(item.description.description_extension)
+            if item.description is not None:
+                if item.description.description_text:
+                    print(item.description.description_text, '\n')
+                if item.description.description_extension:
+                    print(item.description.description_extension)
             print('-' * 100)
 
     @rss_logger(logger)
