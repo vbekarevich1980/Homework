@@ -179,31 +179,32 @@ class NewsReader:
                 story.append(Paragraph(publish_date))
                 story.append(Paragraph('', divider_style))
 
-            if item.description.description_images:
-                for image in item.description.description_images:
-                    image_pdf = f'<para autoleading="min">' \
-                                f'<img src={image} valign="top"/>' \
-                                f'<br/><br/></para>'
-                    story.append(Paragraph(image_pdf))
+            if item.description is not None:
+                if item.description.description_images:
+                    for image in item.description.description_images:
+                        image_pdf = f'<para autoleading="min">' \
+                                    f'<img src={image} valign="top"/>' \
+                                    f'<br/><br/></para>'
+                        story.append(Paragraph(image_pdf))
 
-            if item.description.description_text:
-                description_text = f'<para autoleading="min">' \
-                                   f'<font fontName="Times">' \
-                                   f'{item.description.description_text}' \
-                                   f'</font></para>'
-                story.append(Paragraph(description_text))
+                if item.description.description_text:
+                    description_text = f'<para autoleading="min">' \
+                                       f'<font fontName="Times">' \
+                                       f'{item.description.description_text}' \
+                                       f'</font></para>'
+                    story.append(Paragraph(description_text))
 
-            if item.description.description_links:
-                link_label = '<para><strong>Links:</strong></para>'
-                story.append(Paragraph('', divider_style))
-                story.append(Paragraph(link_label))
+                if item.description.description_links:
+                    link_label = '<para><strong>Links:</strong></para>'
+                    story.append(Paragraph('', divider_style))
+                    story.append(Paragraph(link_label))
 
-                for i in range(len(item.description.description_links)):
-                    link = f'<para>[{i+1}]: <font fontName="Times">' \
-                           f'<link color="blue">' \
-                           f'{item.description.description_links[i]}' \
-                           f'</link></font></para>'
-                    story.append(Paragraph(link))
+                    for i in range(len(item.description.description_links)):
+                        link = f'<para>[{i+1}]: <font fontName="Times">' \
+                               f'<link color="blue">' \
+                               f'{item.description.description_links[i]}' \
+                               f'</link></font></para>'
+                        story.append(Paragraph(link))
 
             story.append(PageBreak())
 
