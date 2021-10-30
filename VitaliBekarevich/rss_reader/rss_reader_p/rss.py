@@ -768,7 +768,8 @@ class RSSItemDescription:
         :param **kwargs: dict
         The dictionary containing
              description: str
-             The HTML text of the description part of the RSS channel item
+             The xml.etree.ElementTree.Element of the description part
+             of the RSS channel item
              text: str
              The text of the description part of the RSS channel item
              links: str
@@ -779,7 +780,8 @@ class RSSItemDescription:
              description part of the RSS channel item
         """
         if kwargs['description'] is not None:
-            # Parse the text data and URLs from the HTML text of the
+            # Parse the text data and URLs from the
+            # xml.etree.ElementTree.Element instance of the
             # description part of the RSS channel item
             description_parser = DescriptionHTMLParser()
             description_parser.feed(kwargs['description'].text)
