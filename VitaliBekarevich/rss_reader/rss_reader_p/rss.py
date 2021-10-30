@@ -451,8 +451,12 @@ class RSSNewsReader(NewsReader):
         news_dataframe = news_dataframe.join(publish_dates,
                                              rsuffix='_formatted')
         # Convert the DataFrame into a csv file
-        with open(os.path.join('docs', 'requested_news_storage.csv'), 'a',
-                  encoding='utf-16') as log_file:
+        with open(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    'docs', 'requested_news_storage.csv'),
+                'a', encoding='utf-16'
+        ) as log_file:
             news_dataframe.to_csv(log_file, sep=';', header=False,
                                   index=False, encoding='utf-16')
 
@@ -509,7 +513,10 @@ class CachedNewsReader(NewsReader):
         rss_items = []
         # Read items from the csv file (local storage)
         cached_news = pd.read_csv(
-            os.path.join('docs', 'requested_news_storage.csv'),
+            os.path.join(
+                os.path.dirname(__file__),
+                'docs',
+                'requested_news_storage.csv'),
             sep=';',
             decimal=',',
             header=None,
