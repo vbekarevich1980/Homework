@@ -53,47 +53,44 @@ class NewsReader:
         the URL of the parsed RSS feed
     feed : str
         the title of the parsed RSS feed
-    parsed_text_data : str
-        the text data parsed from HTML text of the rss channel item
-        description
+    items : list
+        the list of RSSItem instances
+    items_limit : int
+        the number of items to yield from iterator object
     """
+
     @rss_logger(logger)
     def __init__(self, rss_url=None, items_limit=None):
         """
-        Construct an instance of NewsReader class and set values for structure,
-        version, title, url, items, items_limit, offset
-        attributes.
+        Construct an instance of NewsReader class and set values for url,
+        feed, items and items_limit attributes.
 
         :param rss_url: str
-        The URL string passed for retrieving a rss document from
+        The URL of the parsed RSS feed (default is None)
         :param items_limit: int
-        The number of items to yield from iterator object of RSS
-        by __next__ method (default is None)
+        The number of items to yield from iterator object (default is None)
         """
         self.url = rss_url
         self.feed = ''
         self.items = []
-        self.limit = items_limit
-
+        self.items_limit = items_limit
 
     @rss_logger(logger)
     def __iter__(self):
         """
-        Return the instance of RSS class as an iterator.
+        Return the instance of NewsViewer class as an iterator.
 
-        :return: RSS
-        The the instance of RSS class as an iterator
+        :return: NewsViewer
+        The the instance of NewsViewer class as an iterator
         """
         return NewsViewer(self.items, self.items_limit)
 
     @rss_logger(logger)
     def news_to_console_printer(self):
         """
-        Print into stdout the title of the rss feed and the news items
-        below.
+        Print into stdout the news items parsed from the RSS feed in
+        standard format.
 
-        :param args: argparse.Namespace
-        The arguments intercepted by argparse from command line
         """
         print('-' * 100)
         for item in self:
@@ -101,8 +98,7 @@ class NewsReader:
                 print('Feed:', item.feed)
                 print('-' * 100)
             if item.title is not None:
-                print('Title:', item.title)  # TODO check if there are any  #
-                        # items
+                print('Title:', item.title)
             if item.link is not None:
                 print('Link:', item.link)
             if item.publish_date is not None:
@@ -117,11 +113,9 @@ class NewsReader:
     @rss_logger(logger)
     def json_to_console_printer(self):
         """
-        Print into stdout the title of the rss feed and the news items
-        below.
+        Print into stdout the news items parsed from the RSS feed in
+        JSON format.
 
-        :param args: argparse.Namespace
-        The arguments intercepted by argparse from command line
         """
         print('-' * 100)
         for item in self:
@@ -131,15 +125,17 @@ class NewsReader:
     @rss_logger(logger)
     def news_to_pdf_converter(self, path, date=''):
         """
-        Print into stdout the title of the rss feed and the news items
-        below.
+        Save the news items parsed from the RSS feed into a pdf file.
 
-        :param args: argparse.Namespace
-        The arguments intercepted by argparse from command line
+        :param path: str
+        The path like string
+        :param date: str
+        The date like 'YYYYMMDD' string  (default is '')
         """
+        # Register the font for the correct displaying of cyrillic
         registerFont(TTFont('Times', 'Times.ttc'))
-        #feed = '<para><strong><font size=15>Feed:</font></strong> <font size=15 fontName="Times">Люди Onlíner</font></para>'# + self.url
 
+        # Set a divider between the sections of the pdf file
         divider_style = ParagraphStyle(name='Normal', fontName='Times',
                                        fontSize=16, spaceAfter=15)
 
@@ -159,19 +155,27 @@ class NewsReader:
         story = []
 
         for item in self:
+
+            # Set the RSS feed title
             feed = f'<para><strong><font size=15>Feed:</font></strong> ' \
                    f'<font size=15 fontName="Times">{item.feed}</font></para>'
             story.append(Paragraph(feed))
             story.append(Paragraph('', divider_style))
+
+            # Set the item title
             if item.title is not None:
                 title = f'<para><strong>Title:</strong> ' \
                         f'<font fontName="Times">{item.title}</font></para>'
                 story.append(Paragraph(title))
+
+            # Set the item URL
             if item.link is not None:
                 link = f'<para><strong>Link:</strong> ' \
                        f'<font fontName="Times"><link color="blue">' \
                        f'{item.link}</link></font></para>'
                 story.append(Paragraph(link))
+
+            # Set the item publishing date
             if item.publish_date is not None:
                 publish_date = f'<para><strong>Date:</strong> ' \
                                f'<font fontName="Times">{item.publish_date}' \
@@ -179,25 +183,34 @@ class NewsReader:
                 story.append(Paragraph(publish_date))
                 story.append(Paragraph('', divider_style))
 
+            # Set the item description
             if item.description is not None:
+
+                # Set the description images
                 if item.description.description_images:
-                    for image in enumerate(item.description.description_images):
+                    for image \
+                            in enumerate(item.description.description_images):
+                        # Try to load the description images
                         try:
                             image_request = requests.get(image[1])
+                        # If loading failed set the description images as links
                         except requests.exceptions.RequestException:
                             image_pdf = f'<para>[{image[0] + 1}]: <font ' \
-                                        f'fontName="Times"><link color="blue">{image[1]}</link> (image ' \
-                                        f'was not loaded)</font></para>'
+                                        f'fontName="Times">' \
+                                        f'<link color="blue">{image[1]}' \
+                                        f'</link> (image was not loaded)' \
+                                        f'</font></para>'
                         else:
+                            # If loading succeeded load the description images
+                            # into the pdf file
                             if image_request.status_code == 200:
                                 image_pdf = f'<para autoleading="min">' \
                                     f'<img src={image[1]} valign="top"/>' \
                                     f'<br/><br/></para>'
-
                         story.append(Paragraph(image_pdf))
-
                 story.append(Paragraph('', divider_style))
 
+                # Set the description text
                 if item.description.description_text:
                     description_text = f'<para autoleading="min">' \
                                        f'<font fontName="Times">' \
@@ -205,34 +218,35 @@ class NewsReader:
                                        f'</font></para>'
                     story.append(Paragraph(description_text))
 
+                # Set the description links
                 if item.description.description_links:
                     link_label = '<para><strong>Links:</strong></para>'
                     story.append(Paragraph('', divider_style))
                     story.append(Paragraph(link_label))
-
                     for i in range(len(item.description.description_links)):
                         link = f'<para>[{i+1}]: <font fontName="Times">' \
                                f'<link color="blue">' \
                                f'{item.description.description_links[i]}' \
                                f'</link></font></para>'
                         story.append(Paragraph(link))
-
+            # Set a page break
             story.append(PageBreak())
-
+        # Build a file
         doc.build(story)
 
     @rss_logger(logger)
     def news_to_html_converter(self, path, date=''):
         """
-        Print into stdout the title of the rss feed and the news items
-        below.
+        Save the news items parsed from the RSS feed into a pdf file.
 
-        :param args: argparse.Namespace
-        The arguments intercepted by argparse from command line
+        :param path: str
+        The path like string
+        :param date: str
+        The date like 'YYYYMMDD' string  (default is '')
         """
-
+        # Load the news items JSON formatted
         json_list = [json.loads(item.json) for item in self]
-
+        # Create a DataFrame from the list of the news items JSON formatted
         news_dataframe = pd.read_json(StringIO(json.dumps(json_list)),
                                       orient='records', encoding='utf-16')
         # Check if the specified by the user path exists, if it is a file.
@@ -246,33 +260,45 @@ class NewsReader:
         else:
             os.makedirs(path)
             file = os.path.join(path, f'news_{self.feed}_{date}.html')
-
-        with open(file, 'w',
-                  encoding='utf-16') as html_file:
-            #news_dataframe.to_csv(log_file, sep=';', header=False, index=False,
-            #                      encoding='utf-16')
-            news_dataframe.to_html(buf=html_file, columns=None, col_space=None,
-                              header=True, index=False, na_rep='NaN',
-                              formatters=None, float_format=None,
-                              sparsify=None, index_names=True, justify=None,
-                              max_rows=None, max_cols=None,
-                              show_dimensions=False, decimal='.',
-                              bold_rows=True, classes=None, escape=True,
-                              notebook=False, border=None, table_id=None,
-                              render_links=True, encoding=None)
-
-
+        # Convert the DataFrame into a HTML file
+        with open(file, 'w', encoding='utf-16') as html_file:
+            news_dataframe.to_html(
+                buf=html_file, columns=None, col_space=None,
+                header=True, index=False, na_rep='NaN',
+                formatters=None, float_format=None, sparsify=None,
+                index_names=True, justify=None, max_rows=None,
+                max_cols=None, show_dimensions=False, decimal='.',
+                bold_rows=True, classes=None, escape=True,
+                notebook=False, border=None, table_id=None,
+                render_links=True, encoding=None)
 
 
 class NewsViewer:
+    """
+    A class used to create an iterator object for multiple iteration
+    through the parsed news items in a NewsReader instance.
+
+    Attributes
+    ----------
+    items : list
+        the list of RSSItem instances
+    offset : int
+        the current position in the sequence of items of the __next__ method
+        in the iterator
+    items_limit : int
+        the number of items to yield from iterator object
+    """
+
     @rss_logger(logger)
     def __init__(self, items, limit):
         """
+        Construct an instance of NewsViewer class and set values for items,
+        offset and items_limit attributes.
 
-        :param items:
-        :type items:
-        :param limit:
-        :type limit:
+        :param items: str
+        The list of RSSItem instances
+        :param limit: int
+        The number of items to yield from iterator object
         """
         self.items = items
         self.offset = 0
@@ -285,7 +311,7 @@ class NewsViewer:
 
         :return: RSSItem
         The instance of RSSItem from the list stored in the 'items'
-        attribute of a RSS instance
+        attribute of a NewsViewer instance
         """
         if self.offset >= self.items_limit:
             raise StopIteration
@@ -294,10 +320,11 @@ class NewsViewer:
             self.offset += 1
             return item
 
+
 class RSSNewsReader(NewsReader):
     """
     A class used to represent a RSS container for the parsed structure of
-    a rss document.
+    a RSS feed.
 
     Attributes
     ----------
@@ -307,40 +334,33 @@ class RSSNewsReader(NewsReader):
     version : str
         string with the version of Really Simple Syndication (RSS) format
         used in the rss document
-    title : str
-        the name of the rss feed
-    url : str
-        the URL of the rss feed
+    feed : str
+        the title of the rss feed
     items : list
         the list of RSSItem instances
     items_limit : int
-        the number of items to yield from iterator object of RSS
-        by __next__ method
-    offset : int
-        the current position in the sequence of items of the __next__
-        method in the iterator
+        the number of items to yield from iterator object
     """
 
     @rss_logger(logger)
     def __init__(self, rss_url, items_limit=None):
         """
-        Construct an instance of RSS class and set values for structure,
-        version, title, url, items, items_limit, offset
-        attributes.
+        Construct an instance of RSSNewsReader class and set values for
+        structure, version, feed, items and items_limit attributes.
 
         :param rss_url: str
         The URL string passed for retrieving a rss document from
         :param items_limit: int
-        The number of items to yield from iterator object of RSS
-        by __next__ method (default is None)
+        The number of items to yield from iterator object (default is None)
         """
         NewsReader.__init__(self, rss_url, items_limit)
         self.structure = self.__get_rss_structure()
         self.version = self.structure.attrib['version']
         self.feed = self.structure[0].find('title').text
         self.items = self.__set_items()
-        self.items_limit = (items_limit if items_limit and items_limit < len(
-            self.items) else len(self.items))
+        self.items_limit = (items_limit
+                            if items_limit and items_limit < len(self.items)
+                            else len(self.items))
 
     @rss_logger(logger)
     def __get_rss_structure(self):
@@ -348,38 +368,45 @@ class RSSNewsReader(NewsReader):
         Get the instance of Element class from defusedxml.ElementTree
         defining the root element of the parsed rss tree.
 
-        :param rss_url: str
-        The URL string passed for retrieving a rss document from
+        :raise RSSConnectionError
+        If it is possible to connect the RSS URL
+        :raise RSSParserError
+        If the data structure from the RSS URL fails to be recognised
         :raise NotRSSFeedError
-        If rss_url does not contain a rss feed
+        If the RSS URL does not contain a RSS feed
         :return: xml.etree.ElementTree.Element
         The instance of Element class from defusedxml.ElementTree
         defining the root element of the parsed rss tree
         """
+        # Try to connect to the RSS URL
         try:
             rss_request = requests.get(self.url)
             rss_request.raise_for_status()
         except requests.exceptions.HTTPError:
-            raise ConnectionError(f'Your request to {self.url} returned an unsuccessful status '
-                  f'code - {rss_request.status_code}. Please, try again later '
-                  f'or use other link.')
+            raise RSSConnectionError(f'Your request to {self.url} returned '
+                                     f'an unsuccessful status code - '
+                                     f'{rss_request.status_code}. Please, '
+                                     f'try again later or use other link.')
         except requests.exceptions.ConnectionError:
-            #print(f'When trying to get {self.url} some network problem '
-            #      f'occurred. Please, try again later.')
-            raise ConnectionError(f'When trying to get {self.url} some network problem'
-                                  f'occurred. Please, try again later.')
+            raise RSSConnectionError(f'When trying to get {self.url} some '
+                                     f'network problem occurred. Please, '
+                                     f'try again later.')
         except requests.exceptions.Timeout:
-            raise ConnectionError(f'Your request to {self.url} timed out. Please, try again '
-                  f'later.')
+            raise RSSConnectionError(f'Your request to {self.url} timed out. '
+                                     f'Please, try again later.')
         except requests.exceptions.TooManyRedirects:
-            raise ConnectionError(f'Your request to {self.url} exceeded the number of maximum '
-                  f'redirections. Please, try again later.')
+            raise RSSConnectionError(f'Your request to {self.url} exceeded '
+                                     f'the number of maximum redirections. '
+                                     f'Please, try again later.')
+        # If succeeds try to get the RSS structure
         else:
             try:
                 rss_structure = ElementTree.fromstring(rss_request.text)
             except ElementTree.ParseError:
-                raise ParserError(f'The data structure from {self.url} failed to be '
-                      f'recognise. Please, use other link.')
+                raise RSSParserError(f'The data structure from {self.url} '
+                                     f'failed to be recognised. Please, use '
+                                     f'other link.')
+            # If succeeds check the tag of the structure for being a RSS feed
             else:
                 if rss_structure.tag == 'rss':
                     return rss_structure
@@ -389,8 +416,7 @@ class RSSNewsReader(NewsReader):
                                           f'Please, try other link.')
 
     @rss_logger(logger)
-    def __set_items(self):  # TODO Add flags from parameters - a JSON should
-        # be created only if the lag is on
+    def __set_items(self):
         """
         Generate a list of RSSItem instances.
 
@@ -398,103 +424,67 @@ class RSSNewsReader(NewsReader):
         The list of RSSItem instances
         """
         rss_items = []
-
         for item in self.structure[0].findall('item'):
             title = item.find('title')
             publish_date = item.find('pubDate')
             link = item.find('link')
             description = item.find('description')
-            rss_items.append(RSSItem(self.feed, self.url, title, publish_date, link, description))
+            rss_items.append(
+                RSSItem(self.feed, self.url, title, publish_date, link,
+                        description))
         return rss_items
 
-    #def news_to_console_printer(self):
-    #    """
-    #    Print into stdout the title of the rss feed and the news items
-    #    below.
-#
-    #    :param args: argparse.Namespace
-    #    The arguments intercepted by argparse from command line
-    #    """
-    #    print('-' * 50)
-    #    print('Feed:', self.feed)
-    #    print('-' * 50)
-#
-    #    NewsReader.news_to_console_printer(self)
-
-    #def news_to_pdf_converter(self):
-    #    NewsReader.news_to_pdf_converter(self)
-
-    #def json_to_console_printer(self):
-    #    """
-    #    Print into stdout the title of the rss feed and the news items
-    #    below.
-#
-    #    :param args: argparse.Namespace
-    #    The arguments intercepted by argparse from command line
-    #    """
-    #    print('-' * 50)
-    #    print('Feed:', self.feed)
-    #    print('-' * 50)
-#
-    #    NewsReader.json_to_console_printer(self)
-#
     @rss_logger(logger)
     def cash_news_items(self):
         """
+        Cache the RSS news items into the local storage.
 
-        :return:
-        :rtype:
         """
-
+        # Load the news items JSON formatted
         json_list = [json.loads(item.json) for item in self.items]
-
-        news_dataframe = pd.read_json(StringIO(json.dumps(json_list)), orient='records', encoding='utf-16')
+        # Create a DataFrame from the list of the news items JSON formatted
+        news_dataframe = pd.read_json(StringIO(json.dumps(json_list)),
+                                      orient='records', encoding='utf-16')
         # Add a column with the dates of news publishing in needed format
-        publish_dates = pd.to_datetime(news_dataframe['pubDate']).dt.strftime('%Y%m%d')
-        news_dataframe = news_dataframe.join(publish_dates, rsuffix='_formatted')
-
-        with open(os.path.join('docs', 'requested_news_storage.csv'), 'a', encoding='utf-16') as log_file:
-            news_dataframe.to_csv(log_file, sep=';', header=False, index=False,
-                      encoding='utf-16')
+        publish_dates = pd.to_datetime(
+            news_dataframe['pubDate']).dt.strftime('%Y%m%d')
+        news_dataframe = news_dataframe.join(publish_dates,
+                                             rsuffix='_formatted')
+        # Convert the DataFrame into a csv file
+        with open(os.path.join('docs', 'requested_news_storage.csv'), 'a',
+                  encoding='utf-16') as log_file:
+            news_dataframe.to_csv(log_file, sep=';', header=False,
+                                  index=False, encoding='utf-16')
 
 
 class CachedNewsReader(NewsReader):
     """
-    A class used to represent a RSS container for the parsed structure of
-    a rss document.
+    A class used to represent a RSS container for the news items retrieved
+    from the local storage.
+
     Attributes
     ----------
-    structure : xml.etree.ElementTree.Element
-        the instance of Element class from defusedxml.ElementTree defining
-        the root element of the parsed rss tree
-    version : str
-        string with the version of Really Simple Syndication (RSS) format
-        used in the rss document
-    title : str
-        the name of the rss feed
-    url : str
-        the URL of the rss feed
+    feed : str
+        the title of the rss feed
+    publish_date : str
+        the date the news published on are to be found in the local storage
     items : list
         the list of RSSItem instances
     items_limit : int
-        the number of items to yield from iterator object of RSS
-        by __next__ method
-    offset : int
-        the current position in the sequence of items of the __next__
-        method in the iterator
+        the number of items to yield from iterator object
     """
 
     @rss_logger(logger)
     def __init__(self, rss_url, publish_date, items_limit=None):
         """
-        Construct an instance of RSS class and set values for structure,
-        version, title, url, items, items_limit, offset
-        attributes.
+        Construct an instance of CachedNewsReader class and set values for
+        feed, publish_date, items and items_limit attributes.
         :param rss_url: str
-        The URL string passed for retrieving a rss document from
+        The URL string news from the which are to be found in the local storage
+        :param publish_date: int
+        The date the news published on are to be found in the local storage
         :param items_limit: int
-        The number of items to yield from iterator object of RSS
-        by __next__ method (default is None)
+        The number of items to yield from iterator object (default is None)
         """
         NewsReader.__init__(self, rss_url, items_limit)
         self.feed = ''
@@ -505,50 +495,61 @@ class CachedNewsReader(NewsReader):
                 self.items) else len(self.items))
 
     @rss_logger(logger)
-    def __set_items(self):  # TODO Add flags from parameters - a JSON should
-        # be created only if the lag is on
+    def __set_items(self):
         """
         Generate a list of RSSItem instances.
+
+        :raise DateNotValidError
+        If no cached news published on the specified date are found
+        :raise NoCachedRSSFeedFoundError
+        If no cached news from the specified feed are found
         :return: list
         The list of RSSItem instances
         """
         rss_items = []
-
-
-
-        cached_news = pd.read_csv(os.path.join('docs', 'requested_news_storage.csv'), sep=';',
-                                  decimal=',', header=None,
-                                  names=['feed', 'feed_url', 'title',
-                                         'pubDate', 'link', 'description_text',
-                                         'description_links',
-                                         'description_images', 'pubDate_formatted'], usecols=[0, 1, 2, 3,4,5,6,7,8],
-                                  parse_dates=['pubDate_formatted'], infer_datetime_format=True,
-                                  skip_blank_lines=True, encoding='utf-16')
-
-
+        # Read items from the csv file (local storage)
+        cached_news = pd.read_csv(
+            os.path.join('docs', 'requested_news_storage.csv'),
+            sep=';',
+            decimal=',',
+            header=None,
+            names=['feed', 'feed_url', 'title', 'pubDate', 'link',
+                   'description_text', 'description_links',
+                   'description_images', 'pubDate_formatted'],
+            usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8],
+            parse_dates=['pubDate_formatted'],
+            infer_datetime_format=True,
+            skip_blank_lines=True,
+            encoding='utf-16')
+        # Remove possible duplicates
         cached_news.drop_duplicates(inplace=True)
 
         try:
             # Pick up the news by the date
             selected_by_date_news = cached_news.loc[
                 cached_news['pubDate_formatted'] == self.publish_date]
-
+            # If DataFrame is empty raise DateNotValidError
             if selected_by_date_news.empty:
-                raise DateNotValidError('There are no cached news published on the specified date. Please, try another date.')
-
+                raise DateNotValidError('There are no cached news published '
+                                        'on the specified date. Please, try '
+                                        'another date.')
             # Pick up the news by the feed
             if self.url:
                 selected_by_date_and_feed_news = selected_by_date_news.loc[
                     selected_by_date_news['feed_url'] == self.url]
+                # If DataFrame is empty raise NoCachedRSSFeedFoundError
                 if selected_by_date_and_feed_news.empty:
                     raise NoCachedRSSFeedFoundError(
                         'There are no cached news from the specified feed. '
                         'Please, try another URL.')
                 self.feed = selected_by_date_and_feed_news.iat[0, 0]
-                selected_news_json = selected_by_date_and_feed_news.to_json(orient='records', force_ascii=False)
+                # Set a list of JSON formatted news items from the DataFrame
+                selected_news_json = selected_by_date_and_feed_news.to_json(
+                    orient='records', force_ascii=False)
             else:
-                selected_news_json = selected_by_date_news.to_json(orient='records', force_ascii=False)
-
+                selected_news_json = selected_by_date_news.to_json(
+                    orient='records', force_ascii=False)
+            # Get list of dictionaries for each news item
             selected_news = json.loads(selected_news_json)
 
             for item in selected_news:
@@ -562,7 +563,9 @@ class CachedNewsReader(NewsReader):
                 description_images = item["description_images"]
                 rss_items.append(
                     RSSItem(feed, feed_url, title, publish_date, link,
-                            RSSItemDescription(text=description_text,links=description_links,images=description_images)))
+                            RSSItemDescription(text=description_text,
+                                               links=description_links,
+                                               images=description_images)))
         except DateNotValidError as error:
             print(error)
         except NoCachedRSSFeedFoundError as error:
@@ -570,48 +573,24 @@ class CachedNewsReader(NewsReader):
         finally:
             return rss_items
 
-    #def news_to_console_printer(self):
-    #    """
-    #    Print into stdout the title of the rss feed and the news items
-    #    below.
-#
-    #    :param args: argparse.Namespace
-    #    The arguments intercepted by argparse from command line
-    #    """
-    #    print('-' * 50)
-    #    print('Feed:', self.feed)
-    #    print('-' * 50)
-#
-    #    NewsReader.news_to_console_printer(self)
-#
-    #def json_to_console_printer(self):
-    #    """
-    #    Print into stdout the title of the rss feed and the news items
-    #    below.
-#
-    #    :param args: argparse.Namespace
-    #    The arguments intercepted by argparse from command line
-    #    """
-    #    print('-' * 50)
-    #    print('Feed:', self.feed)
-    #    print('-' * 50)
-#
-    #    NewsReader.json_to_console_printer(self)
-
 
 class RSSItem:
     """
     A class used to represent a RSSItem container for the parsed
-    structure of a rss channel item.
+    structure of a RSS channel item.
 
     Attributes
     ----------
+    feed : str
+        the item's parent RSS feed title
+    feed_url : str
+        the item's parent RSS feed URL
     title : str
-        the item's headline (default is None)
+        the item's headline
     publish_date : str
-        the publication date and time of the item (default is None)
+        the publication date and time of the item
     link : str
-        the URL of a web page associated with the item (default is None)
+        the URL of a web page associated with the item
     description : RSSItemDescription
         the RSSItemDescription instance (default is None)
     json : JSON formatted str
@@ -619,22 +598,24 @@ class RSSItem:
     """
 
     @rss_logger(logger)
-    def __init__(self, feed, feed_url, title=None, publish_date=None, link=None,
-                 description=None):
+    def __init__(self, feed, feed_url, title=None, publish_date=None,
+                 link=None, description=None):
         """
-        Construct an instance of RSSItem class and set values for title,
-        publish_date, link, description, _json
-        attributes.
+        Construct an instance of RSSItem class and set values for feed,
+        feed_url and json attributes.
 
+        :param feed: str
+        The item's parent RSS feed title
+        :param feed_url: str
+        The item's parent RSS feed URL
         :param title: str
         The item's headline (default is None)
         :param publish_date: str
         The publication date and time of the item (default is None)
         :param link: str
         The URL of a web page associated with the item (default is None)
-        :param description: str
-        The HTML text of the description part of the rss channel item
-        (default is None)
+        :param description: RSSItemDescription
+        The RSSItemDescription instance (default is None)
         """
         self.feed = feed
         self.feed_url = feed_url
@@ -642,18 +623,15 @@ class RSSItem:
         self.__set_publish_date(publish_date)
         self.__set_link(link)
         self.__set_description(description)
-        #self.description = (None if description is None
-        #                    else RSSItemDescription(description=description))
         self.json = self.__generate_json()
 
     @rss_logger(logger)
     def __set_title(self, title):
         """
+        Set value for title attribute.
 
-        :param title:
-        :type title:
-        :return:
-        :rtype:
+        :param title: str
+        The item's headline
         """
         if title is None:
             self.title = None
@@ -665,11 +643,10 @@ class RSSItem:
     @rss_logger(logger)
     def __set_publish_date(self, publish_date):
         """
+        Set value for publish_date attribute.
 
-        :param publish_date:
-        :type publish_date:
-        :return:
-        :rtype:
+        :param publish_date: str
+        The publication date and time of the item
         """
         if publish_date is None:
             self.publish_date = None
@@ -681,11 +658,10 @@ class RSSItem:
     @rss_logger(logger)
     def __set_link(self, link):
         """
+        Set value for link attribute.
 
-        :param link:
-        :type link:
-        :return:
-        :rtype:
+        :param link: str
+        The URL of a web page associated with the item
         """
         if link is None:
             self.link = None
@@ -697,11 +673,10 @@ class RSSItem:
     @rss_logger(logger)
     def __set_description(self, description):
         """
+        Set value for description attribute.
 
-        :param description:
-        :type description:
-        :return:
-        :rtype:
+        :param description: RSSItemDescription
+        The RSSItemDescription instance
         """
         if description is None:
             self.description = None
@@ -714,6 +689,7 @@ class RSSItem:
     def __generate_json(self):
         """
         Serialize a RSSItem object to a JSON formatted str.
+
         :return: JSON formatted str
         The item presented by a JSON formatted str
         """
@@ -724,17 +700,19 @@ class RSSItem:
                     "title": self.title,
                     "pubDate": self.publish_date,
                     "link": self.link,
-                    "description_text":
-                        (None if self.description is None
-                         else self.description.description_text),
-                    "description_links":
-                        (None if self.description is None
-                         else self.description.description_links),
-                    "description_images":
-                        (None if self.description is None
-                         else self.description.description_images)
-                }
-            ,
+                    "description_text": (
+                        None if self.description is None
+                        else self.description.description_text
+                    ),
+                    "description_links": (
+                        None if self.description is None
+                        else self.description.description_links
+                    ),
+                    "description_images": (
+                        None if self.description is None
+                        else self.description.description_images
+                    )
+            },
             indent=4,
             ensure_ascii=False
         )
@@ -760,87 +738,106 @@ class RSSItemDescription:
     """
 
     @rss_logger(logger)
-    def __init__(self, *, description=None, text=None, links=None, images=None):
+    def __init__(self, *, description=None, text=None,
+                 links=None, images=None):
         """
-        Construct an instance of RSSItemDescription class and set values
-        for description_text, description_links, description_images,
-        description_extension attributes.
+        Construct an instance of RSSItemDescription class.
 
         :param description: str
-        The HTML text of the description part of the rss channel item
+        The HTML text of the description part of the RSS channel item
+        (default is None)
+        :param text: str
+        The text of the description part of the RSS channel item
+        :param links: str
+        The string containing the URLs from the description part of the RSS
+        channel item
+        :param images: str
+        The string containing the URLs to the images from the description
+        part of the RSS channel item
         """
-        self.__set_description(description=description, text=text, links=links, images=images)
+        self.__set_description(description=description, text=text,
+                               links=links, images=images)
         self.__set_extension()
 
     @rss_logger(logger)
     def __set_description(self, **kwargs):
         """
-        Parse the text data and URLs from the HTML text of the description
-         part of the rss channel item.
+        Set values for description_text, description_links and
+        description_images attributes.
 
-        :param description: description: str
-        The HTML text of the description part of the rss channel item
-        :return: tuple
-        The text data parsed from HTML text of the rss channel item
-        description
-        The list of URLs met in the rss channel item description
-        The list of URLs to images met in the rss channel item description
+        :param **kwargs: dict
+        The dictionary containing
+             description: str
+             The HTML text of the description part of the RSS channel item
+             text: str
+             The text of the description part of the RSS channel item
+             links: str
+             The string containing the URLs from the description part of
+             the RSS channel item
+             images: str
+             The string containing the URLs to the images from the
+             description part of the RSS channel item
         """
-        #print(kwargs['description'])
-        #print(type(kwargs['description']))
-        #print('^^^^^^')
         if kwargs['description'] is not None:
+            # Parse the text data and URLs from the HTML text of the
+            # description part of the RSS channel item
             description_parser = DescriptionHTMLParser()
             description_parser.feed(kwargs['description'].text)
+            # Set the text data parsed from HTML text of the rss channel item
+            # description
             self.description_text = description_parser.parsed_text_data
+            # Set the list of URLs met in the rss channel item description
             self.description_links = list(description_parser.parsed_links)
+            # Set the list of URLs to images met in the rss channel item
+            # description
             self.description_images = list(description_parser.parsed_images)
         else:
             self.description_text = kwargs['text'] if kwargs['text'] else ''
             # If the list of links is not empty
             if kwargs['links']:
                 # Remove extra quotes
-                self.description_links = [link.strip("'\"") for link in kwargs['links'].strip('[]').split(', ')]
+                self.description_links = [
+                    link.strip("'\"")
+                    for link
+                    in kwargs['links'].strip('[]').split(', ')
+                ]
             else:
                 self.description_links = []
-            #self.description_links = kwargs['links'].strip('[]').split(', ') \
-            #    if kwargs['links'] else []
-            # If the list of links is not empty
+            # If the list of images is not empty
             if kwargs['images']:
                 # Remove extra quotes
-                self.description_images = [image.strip("'\"") for image in kwargs['images'].strip('[]').split(', ')]
+                self.description_images = [
+                    image.strip("'\"")
+                    for image
+                    in kwargs['images'].strip('[]').split(', ')
+                ]
             else:
-                self.description_images =[]
-                #self.description_images = kwargs['images'].strip('[]').split(', ')\
-                #if kwargs['images'] else []
+                self.description_images = []
 
     @rss_logger(logger)
     def __set_extension(self):
         """
-        Compiled the string with the text for printing out in stdout
-        from description_links and description_images.
+        Set a value for description_extension attribute.
 
-        :return: str
-        The compiled from description_links and description_images text for
-        printing out in stdout
         """
-
+        # Compiled the string with the text for printing out in stdout from
+        # description_links and description_images.
         if self.description_links or self.description_images:
+            # Begin with the 'Links:'
             description_extension = 'Links:\n'
             line_number = 1
-
-
+            # Add a new line for each link
             for link in self.description_links:
                 new_line = '[' + str(line_number) + ']: ' + link + ' (link)\n'
                 description_extension += new_line
                 line_number += 1
+            # Add a new line for each link
             for image in self.description_images:
-                new_line = '[' + str(line_number) + ']: ' + image + ' (image)\n'
+                new_line = ('[' + str(line_number) + ']: ' + image
+                            + ' (image)\n')
                 description_extension += new_line
                 line_number += 1
         else:
             description_extension = ''
-
+        # Set the value for description_extension attribute
         self.description_extension = description_extension
-
-

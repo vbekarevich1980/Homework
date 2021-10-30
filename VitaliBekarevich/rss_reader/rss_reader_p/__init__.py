@@ -16,5 +16,7 @@ rss_exceptions --
     the module exporting custom exceptions to errors which may occur
     during rss_reader.py utility running
 rss_logger --
+    the module exports rss_logger decorator for logging what
+    the classes methods do while the rss_reader.py utility running
 
 """

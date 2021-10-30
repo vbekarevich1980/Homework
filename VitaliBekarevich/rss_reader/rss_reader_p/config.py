@@ -10,7 +10,7 @@ log_config : dict
     dictionary with the configuration of the logging when running the utility
 """
 
-version = 'Version 2.1.3'
+version = 'Version 3.0.0'
 
 log_config = {
     'version': 1,

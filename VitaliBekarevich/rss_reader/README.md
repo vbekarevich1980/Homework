@@ -45,3 +45,8 @@ i.e. it has the following columns:
     "description_links": list of strings -- "News item additional URLs"
     "description_images": list of strings -- "News item images URLs"
 Plus another column with dates of news publishing in datetime format is added.
+
+# PDF converter
+
+The news items are converted into PDF format with reportlab package. For 
+cyrillic Times.tcc is used sitting in the docs directory.

@@ -1,6 +1,6 @@
 """
 This module exports rss_logger decorator for logging what the classes
-methods do while running the rss_reader.py utility.
+methods do while the rss_reader.py utility running.
 
 """
 
@@ -33,7 +33,9 @@ def rss_logger(logger):
             :return: function or method
             The callable object of the function or method
             """
+            # Parse the docstring of a function or method
             docstring = function.__doc__.split('.\n', maxsplit=1)[0].strip()
+            # Set the first word, e.g. Do -> Doing, Handle -> Handling
             start_word = docstring.split(maxsplit=1)[0]
             if start_word.endswith('e'):
                 start_word = start_word[:-1] + 'ing '

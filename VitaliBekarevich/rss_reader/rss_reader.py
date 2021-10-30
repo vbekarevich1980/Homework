@@ -96,9 +96,9 @@ def main():
             reader.news_to_html_converter(args.to_html, args.date)
         elif not args.json:
             reader.news_to_console_printer()
-    except ConnectionError as error:
+    except RSSConnectionError as error:
         print(error)
-    except ParserError as error:
+    except RSSParserError as error:
         print(error)
     except NotRSSFeedError as error:
         print(error)
